@@ -1,60 +1,33 @@
-const { MessageMedia } = require('whatsapp-web.js');
 const { createCanvas, loadImage } = require('canvas');
-const fs = require('fs');
-const path = require('path');
+const { MessageMedia } = require('whatsapp-web.js');
 
 module.exports = {
   name: 'brat',
-  description: 'Buat sticker gaya brat (background putih, teks hitam tebal)',
-  premium: true,
-
-  execute: async ({ msg, args }) => {
-    if (!args.length) return msg.reply('👀 Contoh: .brat I’m not rude, you’re just irrelevant');
-
-    const text = args.join(' ');
+  async execute({ client, msg }) {
     const canvas = createCanvas(512, 512);
     const ctx = canvas.getContext('2d');
 
-    // Fill white background
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Latar belakang putih
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, 512, 512);
 
-    // Set text style
-    ctx.fillStyle = 'black';
-    ctx.font = 'bold 36px sans-serif';
+    // Guna emoji PNG iOS style
+    const em1 = await loadImage('./assets/emoji_1.png'); // 🥺
+    const em2 = await loadImage('./assets/emoji_2.png'); // 👉
+    const em3 = await loadImage('./assets/emoji_3.png'); // 👈
+
+    ctx.drawImage(em1, 120, 140, 64, 64);
+    ctx.drawImage(em2, 200, 140, 64, 64);
+    ctx.drawImage(em3, 280, 140, 64, 64);
+
+    // Text brat style
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 32px Arial';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // Auto-wrap text
-    const lines = [];
-    let line = '';
-    const words = text.split(' ');
-
-    for (let i = 0; i < words.length; i++) {
-      const testLine = line + words[i] + ' ';
-      const metrics = ctx.measureText(testLine);
-      if (metrics.width > 480 && i > 0) {
-        lines.push(line.trim());
-        line = words[i] + ' ';
-      } else {
-        line = testLine;
-      }
-    }
-    lines.push(line.trim());
-
-    const lineHeight = 50;
-    const startY = canvas.height / 2 - (lines.length / 2) * lineHeight;
-    lines.forEach((l, i) => {
-      ctx.fillText(l, canvas.width / 2, startY + i * lineHeight);
-    });
+    ctx.fillText('i want cuddles 😩', 256, 300);
 
     const buffer = canvas.toBuffer('image/png');
-    const filePath = path.join(__dirname, '..', 'temp', `brat_${Date.now()}.png`);
-    fs.writeFileSync(filePath, buffer);
-
-    const media = MessageMedia.fromFilePath(filePath);
-    await msg.reply(media, undefined, { sendMediaAsSticker: true });
-
-    fs.unlinkSync(filePath); // remove temp file
+    const media = new MessageMedia('image/png', buffer.toString('base64'));
+    await client.sendMessage(msg.from, media, { sendMediaAsSticker: true });
   }
 };
