@@ -18,7 +18,7 @@ const client = new Client({
     usePairingCode: true,
   }),
   puppeteer: {
-    headless: true,
+    headless: false,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   },
 });
@@ -33,7 +33,39 @@ client.on('pairing-code', (code) => {
 // 🌟 BOT READY
 client.on('ready', () => {
   console.log(`\n🤖 Bot ${config.botname} telah aktif sepenuhnya!`);
+  await viewAllStatuses(); // Auto view sekali bila bot ready
 });
+
+// 🌟 AUTO VIEW STATUS
+const viewAllStatuses = async () => {
+  const chats = await client.pupPage.evaluate(async () => {
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const selectors = {
+      storyTray: '._2AOIt',
+      storyItem: '._1-FMR'
+    };
+
+    const tray = document.querySelector(selectors.storyTray);
+    if (!tray) return 'Tiada story tray.';
+
+    tray.click();
+    await sleep(1000);
+
+    const items = document.querySelectorAll(selectors.storyItem);
+    for (let i = 0; i < items.length; i++) {
+      items[i].click();
+      await sleep(3500); // boleh ubah ke 1500 kalau mahu lebih laju
+    }
+
+    document.querySelector('[data-icon="x-viewer"]')?.click();
+    return `Telah lihat ${items.length} status.`;
+  });
+
+  console.log('👀 Auto view status:', chats);
+};
+
+// Ulang setiap 3 minit
+setInterval(viewAllStatuses, 180000);
 
 // 🌟 ANTI DELETE
 client.on('message_revoke_everyone', async (after, before) => {
