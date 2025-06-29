@@ -20,8 +20,8 @@ module.exports = {
       await writeFile(filePath, media);
 
       const stickerBuf = await sticker(filePath, {
-        pack: 'EllyBot 🫦',
-        author: 'HiddenByCherryiz',
+        pack: 'ᴇʟʟʏʙᴏᴛ 🫦',
+        author: 'ᴇʟʟʏʙᴏᴛ',
         type: 'full',
         quality: 70,
       });
