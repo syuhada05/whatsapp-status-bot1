@@ -3,6 +3,7 @@ const { MessageMedia } = require('whatsapp-web.js');
 const fs = require('fs-extra');
 const path = require('path');
 const fetch = require('node-fetch');
+require('dotenv').config(); // Pastikan di index.js juga ada ini!
 
 module.exports = {
   name: 'hd',
@@ -17,17 +18,13 @@ module.exports = {
         return msg.reply('❗ Fail bukan jenis imej.');
       }
 
-      // Simpan imej sementara
+      // Simpan sementara
       const tempPath = path.join(__dirname, '../temp/original.png');
       await fs.ensureDir(path.dirname(tempPath));
       fs.writeFileSync(tempPath, Buffer.from(media.data, 'base64'));
 
-      // Upload ke anonymous image hosting (imgbb atau temporari)
-      const formData = new FormData();
-      formData.append('image', fs.createReadStream(tempPath));
-
-      // Guna Replicate API - Real-ESRGAN
-      const response = await axios.post(
+      // Hantar permintaan ke Replicate
+      const replicateRes = await axios.post(
         'https://api.replicate.com/v1/predictions',
         {
           version: '928f60b6c552e58a0991d5f7e6b59ce47c8c5c3d24bc68240d5c8c515c72ddee',
@@ -39,35 +36,42 @@ module.exports = {
         },
         {
           headers: {
-            'Authorization': `Token ${process.env.OPENAI_API_KEY=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}`,
+            'Authorization': `Token ${process.env.REPLICATE_API_KEY=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}`,
             'Content-Type': 'application/json'
           }
         }
       );
 
-      const getUrl = async () => {
-        let result = null;
-        while (!result) {
-          const check = await axios.get(`https://api.replicate.com/v1/predictions/${response.data.id}`, {
+      const predictionId = replicateRes.data.id;
+
+      // Polling status setiap 2 saat
+      let outputUrl = null;
+      while (!outputUrl) {
+        const statusCheck = await axios.get(
+          `https://api.replicate.com/v1/predictions/${predictionId}`,
+          {
             headers: {
-              'Authorization': `Token ${process.env.REPLICATE_API_KEY}`
+              'Authorization': `Token ${process.env.REPLICATE_API_KEY=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}`
             }
-          });
-          if (check.data.status === 'succeeded') result = check.data.output;
-          else await new Promise(r => setTimeout(r, 2000));
+          }
+        );
+
+        if (statusCheck.data.status === 'succeeded') {
+          outputUrl = statusCheck.data.output;
+        } else if (statusCheck.data.status === 'failed') {
+          return msg.reply('❌ Gagal enhance gambar.');
         }
-        return result;
-      };
 
-      const outputUrl = await getUrl();
+        if (!outputUrl) await new Promise(res => setTimeout(res, 2000));
+      }
 
-      // Download image result
-      const res = await fetch(outputUrl);
-      const buffer = await res.buffer();
+      // Muat turun imej hasil
+      const response = await fetch(outputUrl);
+      const buffer = await response.buffer();
       const enhancedPath = path.join(__dirname, '../temp/enhanced.png');
       fs.writeFileSync(enhancedPath, buffer);
 
-      // Send result to user
+      // Hantar balik
       const resultMedia = await MessageMedia.fromFilePath(enhancedPath);
       await msg.reply(resultMedia);
 
@@ -76,7 +80,7 @@ module.exports = {
       fs.unlinkSync(enhancedPath);
     } catch (err) {
       console.error('❌ HD command error:', err);
-      msg.reply('⚠️ Gagal enhance gambar.');
+      msg.reply('⚠️ Terdapat ralat semasa enhance gambar.');
     }
   },
 };
