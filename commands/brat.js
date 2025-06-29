@@ -1,33 +1,59 @@
-const { createCanvas, loadImage } = require('canvas');
 const { MessageMedia } = require('whatsapp-web.js');
+const { createCanvas, loadImage } = require('canvas');
+const fs = require('fs-extra');
+const path = require('path');
 
 module.exports = {
   name: 'brat',
-  async execute({ client, msg }) {
-    const canvas = createCanvas(512, 512);
-    const ctx = canvas.getContext('2d');
+  description: 'Sticker brat aesthetic 🫦',
+  execute: async ({ msg }) => {
+    try {
+      const width = 512;
+      const height = 512;
+      const canvas = createCanvas(width, height);
+      const ctx = canvas.getContext('2d');
 
-    // Latar belakang putih
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, 512, 512);
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
 
-    // Guna emoji PNG iOS style
-    const em1 = await loadImage('./assets/emoji_1.png'); // 🥺
-    const em2 = await loadImage('./assets/emoji_2.png'); // 👉
-    const em3 = await loadImage('./assets/emoji_3.png'); // 👈
+      // Load each emoji PNG
+      const emojiPaths = [
+        path.join(__dirname, '../assets/emoji/brat1.png'), // 🥺
+        path.join(__dirname, '../assets/emoji/brat2.png'), // 👉
+        path.join(__dirname, '../assets/emoji/brat3.png'), // 👈
+      ];
 
-    ctx.drawImage(em1, 120, 140, 64, 64);
-    ctx.drawImage(em2, 200, 140, 64, 64);
-    ctx.drawImage(em3, 280, 140, 64, 64);
+      const emojiImages = await Promise.all(emojiPaths.map(p => loadImage(p)));
 
-    // Text brat style
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 32px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('i want cuddles 😩', 256, 300);
+      // Draw emojis on canvas with spacing
+      const spacing = 20;
+      let currentX = (width - ((emojiImages.length * 100) + ((emojiImages.length - 1) * spacing))) / 2;
 
-    const buffer = canvas.toBuffer('image/png');
-    const media = new MessageMedia('image/png', buffer.toString('base64'));
-    await client.sendMessage(msg.from, media, { sendMediaAsSticker: true });
-  }
+      for (const emoji of emojiImages) {
+        ctx.drawImage(emoji, currentX, height / 2 - 50, 100, 100);
+        currentX += 100 + spacing;
+      }
+
+      // Save temp image
+      const tempPath = path.join(__dirname, '../temp/brat_sticker.png');
+      await fs.ensureDir(path.dirname(tempPath));
+      const buffer = canvas.toBuffer('image/png');
+      fs.writeFileSync(tempPath, buffer);
+
+      // Send as sticker
+      const media = await MessageMedia.fromFilePath(tempPath);
+      await msg.reply(media, undefined, {
+        sendMediaAsSticker: true,
+        stickerAuthor: 'EllyBot',
+        stickerName: 'Brat Style',
+      });
+
+      // Cleanup
+      fs.unlinkSync(tempPath);
+    } catch (err) {
+      console.error('❌ Gagal buat brat sticker:', err);
+      msg.reply('⚠️ Gagal hasilkan brat sticker.');
+    }
+  },
 };
