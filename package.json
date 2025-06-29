@@ -1,13 +1,22 @@
 {
   "name": "ᴇʟʟʏʙᴏᴛ",
   "version": "1.0.0",
-  "description": "WhatsApp Bot powered by ᴇʟʟʏ",
+  "description": "EllyBot 🫦 - WhatsApp AI Bot with attitude, powered by whatsapp-web.js",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": ["whatsapp", "bot", "whatsapp-web.js", "ai", "sticker", "image-enhancer"],
-  "author": "ᴇʟʟʏʙᴏᴛ",
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "ai",
+    "sticker",
+    "image-enhancer",
+    "whatsapp-web.js",
+    "remini",
+    "chatgpt"
+  ],
+  "author": "ᴇʟʟʏʙᴏᴛ 🫦",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.7",
