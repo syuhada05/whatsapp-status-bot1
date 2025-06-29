@@ -1,31 +1,45 @@
 module.exports = {
   name: 'menu',
-  description: 'Papar senarai command bot',
-  async execute({ msg, config }) {
-    const menuText = `🧾 *${config.botname} Menu:*
+  description: 'Show bot command list / Papar senarai command bot',
+  async execute({ msg, config, isOwner, isPremium }) {
+    const toSmallCaps = (text) => {
+      const normal = 'abcdefghijklmnopqrstuvwxyz';
+      const smallcaps = 'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ';
+      return text
+        .split('')
+        .map((char) => {
+          const idx = normal.indexOf(char.toLowerCase());
+          return idx > -1 ? smallcaps[idx] : char;
+        })
+        .join('');
+    };
 
-👑 *Admin Only*
-• .addpremium [nombor]
-• .delpremium [nombor]
-• .self / .public
+    const menuText = `╭─❍  *${toSmallCaps(config.botname)} ᴍᴇɴᴜ* ❍─╮
 
-💎 *Premium Only*
-• .aiimage [teks]
-• .hd (reply gambar)
-• .brat (reply gambar)
+👑  ${toSmallCaps('Admin Only')} / Admin Sahaja:
+   • .addpremium [nombor] — Tambah user premium
+   • .delpremium [nombor] — Buang user premium
+   • .self / .public — Tukar mode bot
 
-📦 *Umum*
-• .menu
-• .tagall
-• .hidetag [teks]
-• .sticker (reply gambar)
-• .runtime
-• .ping
+💎  ${toSmallCaps('Premium Features')} / Ciri Premium:
+   • .aiimage [text] — Generate AI image
+   • .hd (reply gambar) — HD enhancer
+   • .brat (reply gambar) — Brat-style sticker
 
-📌 *Status:*
-• Self Mode: ${config.selfMode ? '✅ ON' : '❌ OFF'}
-• Premium User: ${msg.from.split('@')[0]}
-`;
+📦  ${toSmallCaps('General Commands')} / Umum:
+   • .menu — Buka menu
+   • .tagall — Mention semua ahli
+   • .hidetag [text] — Sebut tanpa nama
+   • .sticker (reply gambar) — Jadikan sticker
+   • .runtime — Masa aktif bot
+   • .ping — Uji respon bot
+
+📌  ${toSmallCaps('Status')}:
+   • Mode: ${config.selfMode ? '🔒 Self' : '🌐 Public'}
+   • You: ${isOwner ? '👑 Owner' : isPremium ? '💎 Premium' : '🧍 User'}
+
+🕒 ${new Date().toLocaleTimeString()} | 📅 ${new Date().toLocaleDateString()}
+╰─────────────⸙`;
 
     msg.reply(menuText);
   }
