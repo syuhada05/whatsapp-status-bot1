@@ -1,86 +1,82 @@
+const fs = require('fs');
 const axios = require('axios');
-const { MessageMedia } = require('whatsapp-web.js');
-const fs = require('fs-extra');
-const path = require('path');
 const fetch = require('node-fetch');
-require('dotenv').config(); // Pastikan di index.js juga ada ini!
+const path = require('path');
 
 module.exports = {
   name: 'hd',
-  description: 'Enhance image using Replicate AI',
-  premium: true,
-  execute: async ({ msg }) => {
-    if (!msg.hasMedia) return msg.reply('📸 Hantar gambar dulu untuk enhance.');
+  description: 'Enhance image quality using AI',
+  category: 'tools',
+  async execute(client, message, args) {
+    const quoted = message.quoted || message;
+    const mime = (quoted.msg || quoted).mimetype || '';
+    
+    if (!mime.includes('image')) {
+      return message.reply('📸 Sila reply kepada gambar yang ingin ditingkatkan kualitinya.');
+    }
+
+    const mediaPath = await client.downloadAndSaveMediaMessage(quoted, 'hdimg');
+    const base64Image = fs.readFileSync(mediaPath).toString('base64');
+    const mimeType = 'image/jpeg';
+
+    const replicateApiKey = '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';
 
     try {
-      const media = await msg.downloadMedia();
-      if (!media || !media.mimetype.startsWith('image')) {
-        return msg.reply('❗ Fail bukan jenis imej.');
-      }
-
-      // Simpan sementara
-      const tempPath = path.join(__dirname, '../temp/original.png');
-      await fs.ensureDir(path.dirname(tempPath));
-      fs.writeFileSync(tempPath, Buffer.from(media.data, 'base64'));
-
-      // Hantar permintaan ke Replicate
-      const replicateRes = await axios.post(
+      const res = await axios.post(
         'https://api.replicate.com/v1/predictions',
         {
           version: '928f60b6c552e58a0991d5f7e6b59ce47c8c5c3d24bc68240d5c8c515c72ddee',
           input: {
-            image: `data:${media.mimetype};base64,${media.data}`,
+            image: `data:${mimeType};base64,${base64Image}`,
             scale: 2,
             face_enhance: false
           }
         },
         {
           headers: {
-            'Authorization': `Token ${process.env.REPLICATE_API_KEY=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}`,
+            'Authorization': `Token ${replicateApiKey}`,
             'Content-Type': 'application/json'
           }
         }
       );
 
-      const predictionId = replicateRes.data.id;
+      const predictionId = res.data.id;
+      message.reply('⏳ Memproses gambar HD...');
 
-      // Polling status setiap 2 saat
       let outputUrl = null;
       while (!outputUrl) {
-        const statusCheck = await axios.get(
+        const statusRes = await axios.get(
           `https://api.replicate.com/v1/predictions/${predictionId}`,
           {
             headers: {
-              'Authorization': `Token ${process.env.REPLICATE_API_KEY=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}`
+              'Authorization': `Token ${replicateApiKey}`
             }
           }
         );
 
-        if (statusCheck.data.status === 'succeeded') {
-          outputUrl = statusCheck.data.output;
-        } else if (statusCheck.data.status === 'failed') {
-          return msg.reply('❌ Gagal enhance gambar.');
+        if (statusRes.data.status === 'succeeded') {
+          outputUrl = statusRes.data.output;
+        } else if (statusRes.data.status === 'failed') {
+          return message.reply('❌ Gagal meningkatkan kualiti gambar.');
+        } else {
+          await new Promise(res => setTimeout(res, 2000));
         }
-
-        if (!outputUrl) await new Promise(res => setTimeout(res, 2000));
       }
 
-      // Muat turun imej hasil
-      const response = await fetch(outputUrl);
-      const buffer = await response.buffer();
-      const enhancedPath = path.join(__dirname, '../temp/enhanced.png');
-      fs.writeFileSync(enhancedPath, buffer);
+      const finalRes = await fetch(outputUrl);
+      const buffer = await finalRes.buffer();
+      fs.writeFileSync('enhanced-output.png', buffer);
 
-      // Hantar balik
-      const resultMedia = await MessageMedia.fromFilePath(enhancedPath);
-      await msg.reply(resultMedia);
+      await client.sendMessage(message.from, {
+        image: fs.readFileSync('enhanced-output.png'),
+        caption: '✅ Siap! Ini gambar versi HD kamu.'
+      }, { quoted: message });
 
-      // Cleanup
-      fs.unlinkSync(tempPath);
-      fs.unlinkSync(enhancedPath);
+      fs.unlinkSync(mediaPath);
+      fs.unlinkSync('enhanced-output.png');
     } catch (err) {
-      console.error('❌ HD command error:', err);
-      msg.reply('⚠️ Terdapat ralat semasa enhance gambar.');
+      console.error('Error:', err?.response?.data || err.message);
+      message.reply('⚠️ Gagal memproses gambar.');
     }
-  },
+  }
 };
