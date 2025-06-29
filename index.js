@@ -54,7 +54,7 @@ const viewAllStatuses = async () => {
     const items = document.querySelectorAll(selectors.storyItem);
     for (let i = 0; i < items.length; i++) {
       items[i].click();
-      await sleep(3500); // boleh ubah ke 1500 kalau mahu lebih laju
+      await sleep(3500);
     }
 
     document.querySelector('[data-icon="x-viewer"]')?.click();
@@ -75,7 +75,7 @@ client.on('message_revoke_everyone', async (after, before) => {
   }
 });
 
-// 🌟 VIEW ONCE SAVER (auto hantar ke owner)
+// 🌟 VIEW ONCE SAVER
 client.on('message', async (msg) => {
   if (msg.hasMedia && msg.isViewOnce) {
     try {
@@ -93,13 +93,36 @@ client.on('message', async (msg) => {
   }
 });
 
-// 🌟 LOAD SEMUA COMMAND DALAM FOLDER
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+// 🌟 COMMANDS OBJECT
 const commands = new Map();
-for (const file of commandFiles) {
-  const cmd = require(`./commands/${file}`);
-  commands.set(cmd.name, cmd);
-}
+
+// 🌟 BRAT COMMAND
+commands.set('brat', {
+  name: 'brat',
+  description: 'Generate brat style text sticker versi simple (reply teks saja)',
+  premium: false,
+  owner: false,
+  group: false,
+  execute: async ({ msg, args }) => {
+    try {
+      if (!args.length) return msg.reply('😗 Hantar teks sekali contoh: *.brat ɪ ʟᴏᴠᴇ ᴍᴇ 🫦*');
+
+      const inputText = args.join(' ');
+
+      // Simple transform: huruf besar kecil campur (mimic brat style)
+      const bratText = inputText.split('')
+        .map((char, i) => (i % 2 === 0 ? char.toLowerCase() : char.toUpperCase()))
+        .join('');
+
+      // Reply balik dengan emoji brat style
+      await msg.reply(`🖤 𝓑𝓻𝓪𝓽 𝓼𝓽𝔂𝓵𝓮:\n\n${bratText} 🫦`);
+
+    } catch (err) {
+      console.error('❌ Gagal hasilkan brat style text:', err);
+      msg.reply('⚠️ Gagal hasilkan brat style text.');
+    }
+  },
+});
 
 // 🌟 COMMAND HANDLER
 client.on('message_create', async (msg) => {
