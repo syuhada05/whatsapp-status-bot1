@@ -1,1 +1,42 @@
+const fs = require('fs');
+const premiumFile = './database/premium.json';
 
+module.exports = {
+  name: 'premium',
+  description: 'Add or remove premium users',
+  async execute({ msg, args, config }) {
+    if (!config.owner.includes(msg.sender)) {
+      return msg.reply('❌ Command ini hanya untuk owner.');
+    }
+
+    const subcmd = args[0];
+    const number = (args[1] || '').replace(/[^0-9]/g, '');
+
+    if (!['add', 'del'].includes(subcmd) || !number) {
+      return msg.reply('📌 Format:\n.addpremium [nombor]\n.delpremium [nombor]');
+    }
+
+    // Read current premium list
+    let premium = [];
+    if (fs.existsSync(premiumFile)) {
+      premium = JSON.parse(fs.readFileSync(premiumFile));
+    }
+
+    if (subcmd === 'add') {
+      if (premium.includes(number)) {
+        return msg.reply('⚠️ Nombor sudah ada dalam senarai premium.');
+      }
+      premium.push(number);
+      msg.reply(`✅ Berjaya tambah @${number} ke premium.`, { mentions: [`${number}@s.whatsapp.net`] });
+    } else if (subcmd === 'del') {
+      if (!premium.includes(number)) {
+        return msg.reply('⚠️ Nombor tiada dalam senarai premium.');
+      }
+      premium = premium.filter(n => n !== number);
+      msg.reply(`✅ Berjaya buang @${number} dari premium.`, { mentions: [`${number}@s.whatsapp.net`] });
+    }
+
+    // Save back to file
+    fs.writeFileSync(premiumFile, JSON.stringify(premium, null, 2));
+  }
+};
