@@ -2,7 +2,6 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs-extra');
-const moment = require('moment');
 const config = require('./config');
 require('dotenv').config();
 
@@ -18,8 +17,9 @@ const client = new Client({
     usePairingCode: true,
   }),
   puppeteer: {
-    headless: false,
+    headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    executablePath: '/usr/bin/google-chrome-stable', // untuk Pterodactyl server Linux
   },
 });
 
@@ -108,15 +108,11 @@ commands.set('brat', {
       if (!args.length) return msg.reply('😗 Hantar teks sekali contoh: *.brat ɪ ʟᴏᴠᴇ ᴍᴇ 🫦*');
 
       const inputText = args.join(' ');
-
-      // Simple transform: huruf besar kecil campur (mimic brat style)
       const bratText = inputText.split('')
         .map((char, i) => (i % 2 === 0 ? char.toLowerCase() : char.toUpperCase()))
         .join('');
 
-      // Reply balik dengan emoji brat style
       await msg.reply(`🖤 𝓑𝓻𝓪𝓽 𝓼𝓽𝔂𝓵𝓮:\n\n${bratText} 🫦`);
-
     } catch (err) {
       console.error('❌ Gagal hasilkan brat style text:', err);
       msg.reply('⚠️ Gagal hasilkan brat style text.');
@@ -157,5 +153,5 @@ client.on('message_create', async (msg) => {
   }
 });
 
-// 🌟 MULAKAN BOT
+// 🌟 START BOT
 client.initialize();
