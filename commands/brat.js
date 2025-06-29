@@ -1,59 +1,51 @@
+const { createCanvas, registerFont } = require('canvas');
 const { MessageMedia } = require('whatsapp-web.js');
-const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs-extra');
 const path = require('path');
 
+// (Optional) Guna font custom kalau ada, atau pakai default
+// registerFont(path.join(__dirname, '../fonts/YourFont.ttf'), { family: 'BratFont' });
+
 module.exports = {
   name: 'brat',
-  description: 'Sticker brat aesthetic 🫦',
-  execute: async ({ msg }) => {
+  description: 'Generate brat style sticker dengan teks 🫦',
+  execute: async ({ msg, args }) => {
     try {
+      if (!args.length) return msg.reply('😗 Hantar teks sekali contoh: *.brat ɪ ʟᴏᴠᴇ ᴍᴇ 🫦*');
+
+      const text = args.join(' ');
       const width = 512;
       const height = 512;
       const canvas = createCanvas(width, height);
       const ctx = canvas.getContext('2d');
 
-      // White background
-      ctx.fillStyle = '#ffffff';
+      // Background putih
+      ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, width, height);
 
-      // Load each emoji PNG
-      const emojiPaths = [
-        path.join(__dirname, '../assets/emoji/brat1.png'), // 🥺
-        path.join(__dirname, '../assets/emoji/brat2.png'), // 👉
-        path.join(__dirname, '../assets/emoji/brat3.png'), // 👈
-      ];
+      // Teks gaya brat
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 48px Arial'; // Tukar font kalau perlu
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, width / 2, height / 2);
 
-      const emojiImages = await Promise.all(emojiPaths.map(p => loadImage(p)));
-
-      // Draw emojis on canvas with spacing
-      const spacing = 20;
-      let currentX = (width - ((emojiImages.length * 100) + ((emojiImages.length - 1) * spacing))) / 2;
-
-      for (const emoji of emojiImages) {
-        ctx.drawImage(emoji, currentX, height / 2 - 50, 100, 100);
-        currentX += 100 + spacing;
-      }
-
-      // Save temp image
-      const tempPath = path.join(__dirname, '../temp/brat_sticker.png');
-      await fs.ensureDir(path.dirname(tempPath));
       const buffer = canvas.toBuffer('image/png');
+      const tempPath = path.join(__dirname, '../temp/brat_text.png');
+      await fs.ensureDir(path.dirname(tempPath));
       fs.writeFileSync(tempPath, buffer);
 
-      // Send as sticker
       const media = await MessageMedia.fromFilePath(tempPath);
       await msg.reply(media, undefined, {
         sendMediaAsSticker: true,
-        stickerAuthor: 'EllyBot',
-        stickerName: 'Brat Style',
+        stickerAuthor: 'ᴇʟʟʏʙᴏᴛ',
+        stickerName: 'ᴇʟʟʏʙᴏᴛ',
       });
 
-      // Cleanup
       fs.unlinkSync(tempPath);
     } catch (err) {
-      console.error('❌ Gagal buat brat sticker:', err);
-      msg.reply('⚠️ Gagal hasilkan brat sticker.');
+      console.error('❌ Gagal hasilkan brat sticker:', err);
+      msg.reply('⚠️ Gagal hasilkan brat style text.');
     }
   },
 };
