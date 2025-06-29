@@ -31,9 +31,9 @@ client.on('pairing-code', (code) => {
 });
 
 // 🌟 BOT READY
-client.on('ready', () => {
+client.on('ready', async () => {
   console.log(`\n🤖 Bot ${config.botname} telah aktif sepenuhnya!`);
-  await viewAllStatuses(); // Auto view sekali bila bot ready
+  await viewAllStatuses(); // Auto view status bila bot ready
 });
 
 // 🌟 AUTO VIEW STATUS
